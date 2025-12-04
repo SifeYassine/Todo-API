@@ -4,12 +4,11 @@ namespace TodoApi.DTOs;
 
 public class UpdateTodoDto
 {
-  [Required(ErrorMessage = "Title is required")]
-  [StringLength(50, MinimumLength = 1, ErrorMessage = "Title must be between 1 and 50 characters")]
-  public string Title { get; set; } = string.Empty;
+  [StringLength(50, ErrorMessage = "Title cannot exceed 50 characters")]
+  public string? Title { get; set; }
 
   [StringLength(100, ErrorMessage = "Description cannot exceed 100 characters")]
   public string? Description { get; set; }
 
-  public bool IsCompleted { get; set; }
+  public bool? IsComplete { get; set; }
 }
