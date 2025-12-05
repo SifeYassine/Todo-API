@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using TodoApi.DTOs;
 using TodoApi.Services;
 
@@ -6,15 +8,17 @@ namespace TodoApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class TodoController(ITodoService todoService) : ControllerBase
 {
   private readonly ITodoService _todoService = todoService;
+  private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
   // GET: api/Todos
   [HttpGet]
   public async Task<ActionResult<List<TodoDto>>> GetAll()
   {
-    var todos = await _todoService.GetAllTodosAsync();
+    var todos = await _todoService.GetAllTodosAsync(UserId);
     return Ok(todos);
   }
 
@@ -22,7 +26,7 @@ public class TodoController(ITodoService todoService) : ControllerBase
   [HttpGet("{id}")]
   public async Task<ActionResult<TodoDto>> GetById(int id)
   {
-    var todo = await _todoService.GetTodoByIdAsync(id);
+    var todo = await _todoService.GetTodoByIdAsync(id, UserId);
 
     if (todo == null) {
       return NotFound();
@@ -35,7 +39,7 @@ public class TodoController(ITodoService todoService) : ControllerBase
   [HttpPost]
   public async Task<ActionResult<TodoDto>> Create(CreateTodoDto createDto)
   {
-    var todo = await _todoService.CreateTodoAsync(createDto);
+    var todo = await _todoService.CreateTodoAsync(createDto, UserId);
     return CreatedAtAction(nameof(GetById), new { id = todo.Id }, todo);
   }
 
@@ -43,7 +47,7 @@ public class TodoController(ITodoService todoService) : ControllerBase
   [HttpPatch("{id}")]
   public async Task<IActionResult> Update(int id, UpdateTodoDto updateDto)
   {
-    var todo = await _todoService.UpdateTodoAsync(id, updateDto);
+    var todo = await _todoService.UpdateTodoAsync(id, updateDto, UserId);
 
     if (todo == null) {
         return NotFound();
@@ -56,7 +60,7 @@ public class TodoController(ITodoService todoService) : ControllerBase
   [HttpDelete("{id}")]
   public async Task<IActionResult> Delete(int id)
   {
-    var wasDeleted = await _todoService.DeleteTodoAsync(id);
+    var wasDeleted = await _todoService.DeleteTodoAsync(id, UserId);
 
     if (!wasDeleted) {
       return NotFound();

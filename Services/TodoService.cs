@@ -6,21 +6,25 @@ using TodoApi.Models;
 
 namespace TodoApi.Services;
 
-public class TodoService(TodoContext context, IMapper mapper) : ITodoService
+public class TodoService(AppDbContext context, IMapper mapper) : ITodoService
 {
-  private readonly TodoContext _context = context;
+  private readonly AppDbContext _context = context;
   private readonly IMapper _mapper = mapper;
 
-  public async Task<List<TodoDto>> GetAllTodosAsync()
+  public async Task<List<TodoDto>> GetAllTodosAsync(int userId)
   {
-    var todos = await _context.Todos.OrderByDescending(todo => todo.CreatedAt).ToListAsync();
+    var todos = await _context.Todos
+    .Where(todo => todo.UserId == userId)
+    .OrderByDescending(todo => todo.CreatedAt)
+    .ToListAsync();
 
     return _mapper.Map<List<TodoDto>>(todos);
   }
 
-  public async Task<TodoDto?> GetTodoByIdAsync(int id)
+  public async Task<TodoDto?> GetTodoByIdAsync(int id, int userId)
   {
-    var todo = await _context.Todos.FindAsync(id);
+    var todo = await _context.Todos
+    .FirstOrDefaultAsync(todo => todo.Id == id && todo.UserId == userId);
 
     if (todo == null) {
       return null;
@@ -29,13 +33,14 @@ public class TodoService(TodoContext context, IMapper mapper) : ITodoService
     return _mapper.Map<TodoDto>(todo);
   }
 
-  public async Task<TodoDto> CreateTodoAsync(CreateTodoDto createDto)
+  public async Task<TodoDto> CreateTodoAsync(CreateTodoDto createDto, int userId)
   {
     var todo = new Todo
     {
       Title = createDto.Title,
       Description = createDto.Description,
       IsComplete = false,
+      UserId = userId,
       CreatedAt = DateTime.UtcNow,
       UpdatedAt = DateTime.UtcNow
     };
@@ -46,9 +51,10 @@ public class TodoService(TodoContext context, IMapper mapper) : ITodoService
     return _mapper.Map<TodoDto>(todo);
   }
 
-  public async Task<TodoDto?> UpdateTodoAsync(int id, UpdateTodoDto updateDto)
+  public async Task<TodoDto?> UpdateTodoAsync(int id, UpdateTodoDto updateDto, int userId)
   {
-    var todo = await _context.Todos.FindAsync(id);
+    var todo = await _context.Todos
+    .FirstOrDefaultAsync(todo => todo.Id == id && todo.UserId == userId);
 
     if (todo == null) {
       return null;
@@ -62,9 +68,10 @@ public class TodoService(TodoContext context, IMapper mapper) : ITodoService
     return _mapper.Map<TodoDto>(todo);
   }
 
-  public async Task<bool> DeleteTodoAsync(int id)
+  public async Task<bool> DeleteTodoAsync(int id, int userId)
   {
-    var todo = await _context.Todos.FindAsync(id);
+    var todo = await _context.Todos
+    .FirstOrDefaultAsync(todo => todo.Id == id && todo.UserId == userId);
 
     if (todo == null) {
       return false;
