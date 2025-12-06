@@ -15,5 +15,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     .WithMany(user => user.Todos)
     .HasForeignKey(todo => todo.UserId)
     .OnDelete(DeleteBehavior.Cascade);
+
+    modelBuilder.Entity<User>()
+    .HasIndex(user => user.Email)
+    .IsUnique();
+
+    modelBuilder.Entity<User>()
+    .HasIndex(user => user.Username)
+    .IsUnique();
   }
 }

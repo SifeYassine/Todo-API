@@ -12,7 +12,7 @@ using TodoApi.Data;
 namespace TodoApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260111005339_InitialCreate")]
+    [Migration("20260111014240_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -72,7 +72,7 @@ namespace TodoApi.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -83,9 +83,15 @@ namespace TodoApi.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("varchar(255)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("Username")
+                        .IsUnique();
 
                     b.ToTable("Users");
                 });

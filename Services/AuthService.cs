@@ -18,11 +18,10 @@ public class AuthService(AppDbContext context, IMapper mapper, IConfiguration co
 
   public async Task<UserDto?> RegisterAsync(RegisterDto registerDto)
   {
-    if (await _context.Users.AnyAsync(user => user.Email == registerDto.Email)) {
-      return null;
-    }
+    var isExistingUser = await _context.Users
+    .AnyAsync(user => user.Email == registerDto.Email || user.Username == registerDto.Username);
 
-    if (await _context.Users.AnyAsync(user => user.Username == registerDto.Username)) {
+    if (isExistingUser) {
       return null;
     }
 
@@ -45,8 +44,7 @@ public class AuthService(AppDbContext context, IMapper mapper, IConfiguration co
   {
     var user = await _context.Users.FirstOrDefaultAsync(user => user.Email == loginDto.Email);
 
-    if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
-    {
+    if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash)) {
       return null;
     }
 

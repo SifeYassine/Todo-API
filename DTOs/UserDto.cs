@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace TodoApi.DTOs;
 
 public class UserDto
@@ -7,5 +9,6 @@ public class UserDto
   public string Email { get; set; } = string.Empty;
   public DateTime CreatedAt { get; set; }
 
+  [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
   public string? Token { get; set; }
 }
