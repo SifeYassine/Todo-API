@@ -35,4 +35,20 @@ public class AuthController(IAuthService authService) : ControllerBase
 
     return Ok(user);
   }
+
+  // POST: api/Auth/logout
+  [HttpPost("logout")]
+  public async Task<ActionResult> Logout()
+  {
+    var header = Request.Headers.Authorization.ToString();
+    var plainToken = header["Bearer ".Length..].Trim();
+    
+    var revoked = await _authService.RevokeTokenAsync(plainToken);
+    
+    if (!revoked) {
+      return BadRequest(new { message = "Token not found" });
+    }
+
+    return Ok(new { message = "Logged out successfully" });
+  }
 }

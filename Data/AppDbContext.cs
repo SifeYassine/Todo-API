@@ -7,6 +7,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
   public DbSet<Todo> Todos { get; set; }
   public DbSet<User> Users { get; set; }
+  public DbSet<AccessToken> AccessTokens { get; set; }
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
@@ -23,5 +24,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     modelBuilder.Entity<User>()
     .HasIndex(user => user.Username)
     .IsUnique();
+
+    modelBuilder.Entity<AccessToken>()
+    .HasIndex(token => token.TokenHash)
+    .IsUnique();
+            
+    modelBuilder.Entity<AccessToken>()
+    .HasOne(token => token.User)
+    .WithMany()
+    .HasForeignKey(token => token.UserId)
+    .OnDelete(DeleteBehavior.Cascade);
   }
 }

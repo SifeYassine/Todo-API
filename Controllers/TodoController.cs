@@ -50,7 +50,7 @@ public class TodoController(ITodoService todoService) : ControllerBase
     var todo = await _todoService.UpdateTodoAsync(id, updateDto, UserId);
 
     if (todo == null) {
-        return NotFound();
+      return NotFound();
     }
 
     return Ok(todo);

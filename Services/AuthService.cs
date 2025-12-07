@@ -1,5 +1,4 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -49,31 +48,60 @@ public class AuthService(AppDbContext context, IMapper mapper, IConfiguration co
     }
 
     var userDto = _mapper.Map<UserDto>(user);
-    userDto.Token = GenerateJwt(user);
+    userDto.Token = await GenerateAccessTokenAsync(user);
 
     return userDto;
   }
 
-  private string GenerateJwt(User user)
+  private async Task<string> GenerateAccessTokenAsync(User user)
   {
-    var claims = new[]
+    var bytes = RandomNumberGenerator.GetBytes(32);
+    var plainToken = Convert.ToBase64String(bytes);
+    var tokenHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(plainToken)));
+    
+    var accessToken = new AccessToken
     {
-      new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-      new Claim(JwtRegisteredClaimNames.Email, user.Email),
-      new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+      TokenHash = tokenHash,
+      Name = "Web Access Token",
+      UserId = user.Id,
+      CreatedAt = DateTime.UtcNow,
+      ExpiresAt = DateTime.UtcNow.AddDays(7)
     };
+
+    _context.AccessTokens.Add(accessToken);
+    await _context.SaveChangesAsync();
+
+    return plainToken;
+  }
+
+  public async Task<AccessToken?> ValidateTokenAsync(string plainToken)
+  {
+    var tokenHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(plainToken)));
     
-    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-    var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+    var accessToken = await _context.AccessTokens
+    .Include(token => token.User)
+    .FirstOrDefaultAsync(token => token.TokenHash == tokenHash);
+
+    if (accessToken == null || accessToken.ExpiresAt < DateTime.UtcNow) {
+      return null;
+    }
+
+    return accessToken;
+  }
+
+  public async Task<bool> RevokeTokenAsync(string plainToken)
+  {
+    var tokenHash = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(plainToken)));
     
-    var token = new JwtSecurityToken(
-      issuer: _configuration["Jwt:Issuer"],
-      audience: _configuration["Jwt:Audience"],
-      claims: claims,
-      expires: DateTime.UtcNow.AddDays(2),
-      signingCredentials: credentials
-    );
-    
-    return new JwtSecurityTokenHandler().WriteToken(token);
+    var accessToken = await _context.AccessTokens.FirstOrDefaultAsync(token => token.TokenHash == tokenHash);
+
+    if (accessToken == null) {
+      return false;
+    }
+
+    _context.AccessTokens.Remove(accessToken);
+    await _context.SaveChangesAsync();
+
+    return true;
   }
 }
